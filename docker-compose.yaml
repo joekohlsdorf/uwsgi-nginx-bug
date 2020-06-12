@@ -1,0 +1,32 @@
+version: '2.1'
+
+services:
+  nginx: 
+    image: nginx:1.19.0
+    container_name: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 8080:80
+    depends_on:
+      - workload
+    healthcheck:
+      test: "curl --fail http://127.0.0.1 || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  ab:
+    build:
+      context: .
+      dockerfile: Dockerfile-ab
+    command: "-n 100000 -c 200 http://nginx/"
+    depends_on:
+      nginx:
+        condition: service_healthy
+  workload:
+    build:
+      context: .
+    volumes:
+      - .:/app
+    ports:
+      - 8000:8000
